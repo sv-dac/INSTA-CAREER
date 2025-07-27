@@ -1,4 +1,4 @@
-package com.icareer.constants;
+package com.icareer.utility;
 
 public class AppConstant {
 	public static final String MY_TOPIC = "my-topic";

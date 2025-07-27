@@ -1,84 +1,107 @@
 package com.icareer.controller;
 
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.icareer.dto.UserProfileRequest;
 
-import java.util.Map;
-import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 public class ProfileController {
+    private static final Logger logger = LoggerFactory.getLogger(ProfileController.class);
 
+    /*
     @PostMapping("/process-profile")
-    public String processProfile(@RequestBody Map<String, Object> payload) {
-        System.out.println("Received Payload: " + payload);
-
-        List<String> interests = (List<String>) payload.get("interests");
-        System.out.println("Interests: " + interests);
-
-        Map<String, Object> careerJustifications = (Map<String, Object>) payload.get("career_justifications");
-        if (careerJustifications != null) {
-            String dataScientistJustification = (String) careerJustifications.get("Data Scientist");
-            System.out.println("Data Scientist Justification: " + dataScientistJustification);
+    public ResponseEntity<String> processProfile(@Valid @RequestBody ProfileRequest payload) {
+        logger.info("Received Payload: {}", payload);
+        logger.info("Interests: {}", payload.getInterests());
+        
+        if (payload.getCareerJustifications() != null) {
+            String dataScientistJustification = payload.getCareerJustifications().get("Data Scientist");
+            logger.info("Data Scientist Justification: {}", dataScientistJustification);
         }
-
-        System.out.println("Confidence Scores: " + payload.get("confidence_scores"));
-
-        return "Profile data received and processed!";
+        
+        logger.info("Confidence Scores: {}", payload.getConfidenceScores());
+        return ResponseEntity.ok("Profile data received and processed!");
     }
+    */
     
     @PostMapping("/process-user-profile")
-    public ResponseEntity<String> processUserProfile(@RequestBody Map<String, Object> userProfileData) {
+    public ResponseEntity<String> processUserProfile(@Valid @RequestBody UserProfileRequest userProfileData) {
+        // Log all major fields for traceability
+        logger.info("Interests: {}", userProfileData.getInterests());
+        logger.info("Career Suggestions: {}", userProfileData.getCareerSuggestions());
+        logger.info("Mapped Interest to Careers: {}", userProfileData.getMappedInterestToCareers());
+        logger.info("Career Justifications: {}", userProfileData.getCareerJustifications());
+        logger.info("Interest Traits: {}", userProfileData.getInterestTraits());
+        logger.info("Confidence Scores: {}", userProfileData.getConfidenceScores());
+        logger.info("Values: {}", userProfileData.getValues());
+        logger.info("Emotional Patterns: {}", userProfileData.getEmotionalPatterns());
+        logger.info("Self Concept: {}", userProfileData.getSelfConcept());
+        logger.info("OCEAN Traits: {}", userProfileData.getOceanTraits());
+        logger.info("Content Themes: {}", userProfileData.getContentThemes());
+        logger.info("Psychological Insights: {}", userProfileData.getPsychologicalInsights());
 
-        List<String> interests = (List<String>) userProfileData.get("interests");
+        String topCareer = null;
+        Double topConfidence = null;
+        String topJustification = null;
         
-        List<String> careerSuggestions = (List<String>) userProfileData.get("career_suggestions");
-        
-        Map<String, List<String>> mappedInterestToCareers = (Map<String, List<String>>) userProfileData.get("mapped_interest_to_careers");
-        
-        Map<String, String> careerJustifications = (Map<String, String>) userProfileData.get("career_justifications");
-        
-        Map<String, List<String>> interestTraits = (Map<String, List<String>>) userProfileData.get("interest_traits");
-        
-        Map<String, Double> confidenceScores = (Map<String, Double>) userProfileData.get("confidence_scores");
-        
-        List<String> values = (List<String>) userProfileData.get("values");
-        
-        List<String> emotionalPatterns = (List<String>) userProfileData.get("emotional_patterns");
-        
-        List<String> selfConcept = (List<String>) userProfileData.get("self_concept");
-        
-        Map<String, Map<String, Object>> oceanTraits = (Map<String, Map<String, Object>>) userProfileData.get("ocean_traits");
-        
-        List<String> contentThemes = (List<String>) userProfileData.get("content_themes");
-        
-        List<String> psychologicalInsights = (List<String>) userProfileData.get("psychological_insights");
-
-        if (oceanTraits != null && oceanTraits.containsKey("openness")) {
-            Map<String, Object> opennessTrait = oceanTraits.get("openness");
-            Integer opennessScore = (Integer) opennessTrait.get("score");
-            String opennessDescription = (String) opennessTrait.get("description");
-            System.out.println("Openness Score: " + opennessScore);
-            System.out.println("Openness Description: " + opennessDescription);
+        if (userProfileData.getConfidenceScores() != null && !userProfileData.getConfidenceScores().isEmpty()) {
+            topCareer = userProfileData.getConfidenceScores().entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(null);
+            topConfidence = userProfileData.getConfidenceScores().get(topCareer);
+            if (userProfileData.getCareerJustifications() != null) {
+                topJustification = userProfileData.getCareerJustifications().get(topCareer);
+            }
         }
 
-        System.out.println("Received interests: " + interests);
-        System.out.println("Received career suggestions: " + careerSuggestions);
+        StringBuilder oceanSummary = new StringBuilder();
+        if (userProfileData.getOceanTraits() != null) {
+            for (Map.Entry<String, Map<String, Object>> entry : userProfileData.getOceanTraits().entrySet()) {
+                String trait = entry.getKey();
+                Map<String, Object> details = entry.getValue();
+                oceanSummary.append(String.format("%s: score=%s, desc=%s. ",
+                    trait,
+                    details != null ? details.get("score") : "N/A",
+                    details != null ? details.get("description") : "N/A"
+                ));
+            }
+        }
 
-        return ResponseEntity.ok("User profile data received and processed successfully!");
+        StringBuilder response = new StringBuilder();
+        response.append("Processed user profile.\n");
+        if (topCareer != null) {
+            response.append(String.format("Top Career Suggestion: %s (Confidence: %.2f)\nJustification: %s\n",
+                topCareer, topConfidence, topJustification != null ? topJustification : "N/A"));
+        }
+        if (oceanSummary.length() > 0) {
+            response.append("OCEAN Traits Summary: ").append(oceanSummary).append("\n");
+        }
+        response.append(String.format("Interests: %d, Career Suggestions: %d, Values: %d, Content Themes: %d, Insights: %d",
+            userProfileData.getInterests() != null ? userProfileData.getInterests().size() : 0,
+            userProfileData.getCareerSuggestions() != null ? userProfileData.getCareerSuggestions().size() : 0,
+            userProfileData.getValues() != null ? userProfileData.getValues().size() : 0,
+            userProfileData.getContentThemes() != null ? userProfileData.getContentThemes().size() : 0,
+            userProfileData.getPsychologicalInsights() != null ? userProfileData.getPsychologicalInsights().size() : 0
+        ));
+
+        return ResponseEntity.ok(response.toString());
     }
-    
 
     @PostMapping("/process-profile-jsonnode")
     public String processProfileJsonNode(@RequestBody JsonNode payload) {
         System.out.println("Received Payload as JsonNode: " + payload.toPrettyString());
 
-        
-        
         JsonNode interestsNode = payload.get("interests");
         if (interestsNode != null && interestsNode.isArray()) {
             for (JsonNode interest : interestsNode) {

@@ -1,17 +1,22 @@
 package com.icareer.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.icareer.entity.UserProfile;
-import com.icareer.repository.UserProfileRepository;
+import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icareer.dto.UserProfileRequest;
+import com.icareer.entity.UserProfile;
+import com.icareer.repository.UserProfileRepository;
+import com.icareer.service.UserProfileService;
 
 @RestController
 public class UserProfileController {
@@ -22,12 +27,12 @@ public class UserProfileController {
     @Autowired
     private ObjectMapper objectMapper; 
 
-    /***
-     * 
-     * @param userProfileData
-     * @return
-     */
+    private final UserProfileService userProfileService;
     
+    public UserProfileController(UserProfileService userProfileService) {
+    	this.userProfileService = userProfileService;
+    }
+        
     @PostMapping("/save-profile")
     public ResponseEntity<String> saveUserProfile(@RequestBody Map<String, Object> userProfileData) {
         try {
@@ -44,5 +49,14 @@ public class UserProfileController {
             e.printStackTrace();
             return ResponseEntity.badRequest().body("Error processing JSON: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/api/profile/{correlatedId}")
+    public ResponseEntity<UserProfileRequest> getProcessedProfile(@PathVariable String correlatedId) {
+        Optional<UserProfileRequest> processedProfile = userProfileService.getProcessedProfile(correlatedId);
+
+        return processedProfile
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }
