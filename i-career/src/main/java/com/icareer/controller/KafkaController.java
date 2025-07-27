@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.icareer.constants.AppConstant;
 import com.icareer.service.KafkaProducerService;
+import com.icareer.utility.AppConstant;
 
 @RestController
 public class KafkaController {
@@ -26,7 +26,11 @@ public class KafkaController {
 	
 	@PostMapping("/publish")
 	public String publishMessage(@RequestBody Object obj) {
-				
+		String message = obj.toString(); 
+		producerService.sendMessage(AppConstant.MY_TOPIC, message);
+		
+		System.out.println("Published message: " + message);
 		return "Message published";
+		// return ResponseEntity.ok("Message published: " + message);
 	}
 }
