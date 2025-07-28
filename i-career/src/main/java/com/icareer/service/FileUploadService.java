@@ -49,7 +49,7 @@ public class FileUploadService {
 		Path uploadPath = Paths.get(uploadDir);
 		Files.createDirectories(uploadPath);
 		Path filePath = uploadPath.resolve(file.getOriginalFilename());
-//		Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+		Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
 		String correlatedId = UUID.randomUUID().toString();
 		YouTubeActivityExtractor(file, correlatedId);

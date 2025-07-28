@@ -1,7 +1,6 @@
 package com.icareer.controller;
 
 import java.io.IOException;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,9 +28,6 @@ public class FileUploadController {
 
 		try {			
 			return ResponseEntity.ok(fileUploadService.handleZipUpload(file));
-//			String correlatedId = UUID.randomUUID().toString();
-//			fileUploadService.YouTubeActivityExtractor(file, correlatedId);
-//			return ResponseEntity.ok(correlatedId + " - ZIP file uploaded successfully: " + file.getOriginalFilename());
 		} catch (IOException e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Upload failed.");
