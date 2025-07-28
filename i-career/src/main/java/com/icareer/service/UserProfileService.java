@@ -14,23 +14,22 @@ import com.icareer.dto.UserProfileRequest;
 @Service
 public class UserProfileService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
+	private static final Logger logger = LoggerFactory.getLogger(UserProfileService.class);
 
-    // use a database (like Redis, PostgreSQL, etc.).
-    private final Map<String, UserProfileKafkaPayload> processedProfiles = new ConcurrentHashMap<>();
+	// use a database (like Redis, PostgreSQL, etc.).
+	private final Map<String, UserProfileKafkaPayload> processedProfiles = new ConcurrentHashMap<>();
 
-    public void processAndStoreProfile(UserProfileKafkaPayload userProfileData) {
-        logger.info("Processing profile for correlatedId : {}", userProfileData.getId());
-        logger.info("Processing profile for correlatedId : {}", userProfileData.getRaw_descritions());
-        logger.info("Processing profile for correlatedId : {}", userProfileData.getCleaned_descriptions());
-        logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_promt());
-        logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_res());
-        processedProfiles.put(userProfileData.getId(), userProfileData);
-        logger.info("Stored processed profile for correlatedId : {}", userProfileData.getId());
-    }
+	public void processAndStoreProfile(UserProfileKafkaPayload userProfileData) {
+		logger.info("Processing profile for correlatedId : {}", userProfileData.getId());
+		logger.info("Processing profile for correlatedId : {}", userProfileData.getRaw_descritions());
+		logger.info("Processing profile for correlatedId : {}", userProfileData.getCleaned_descriptions());
+		logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_promt());
+		logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_res());
+		processedProfiles.put(userProfileData.getId(), userProfileData);
+		logger.info("Stored processed profile for correlatedId : {}", userProfileData.getId());
+	}
 
-    public Optional<UserProfileRequest> getProcessedProfile(String correlatedId) {
-        return Optional.ofNullable(processedProfiles.get(correlatedId))
-            .map(UserProfileKafkaPayload::getModel_res);
-    }
+	public Optional<UserProfileRequest> getProcessedProfile(String correlatedId) {
+		return Optional.ofNullable(processedProfiles.get(correlatedId)).map(UserProfileKafkaPayload::getModel_res);
+	}
 }
