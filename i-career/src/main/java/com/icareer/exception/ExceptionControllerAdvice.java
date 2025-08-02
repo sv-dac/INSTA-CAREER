@@ -7,27 +7,35 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ExceptionControllerAdvice {
-	
+	// HttpStatus.BAD_REQUEST (400), HttpStatus.NOT_FOUND (404),
+	// or HttpStatus.INTERNAL_SERVER_ERROR (500) are more appropriate
+
 	@ExceptionHandler(Exception.class)
-	public String exceptionHandler(Exception ex) {
-		return ex.getMessage();
+	public ResponseEntity<ErrorMessage> handleGenericException(Exception ex) {
+		ErrorMessage error = new ErrorMessage();
+		error.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		error.setMessage("An unexpected server error occurred: " + ex.getMessage());
+		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
 	@ExceptionHandler(RuntimeException.class)
-	public String exceptionHandler(RuntimeException ex) {
+	public String runtimeExceptionHandler(RuntimeException ex) {
 		return ex.getMessage();
 	}
-	
+
 	@ExceptionHandler(Throwable.class)
-	public String exceptionHandler(Throwable ex) {
+	public String throwableHandler(Throwable ex) {
 		return ex.getMessage();
 	}
-	
-	@ExceptionHandler(NoSuchCustomerException.class)
-	public ResponseEntity<ErrorMessage> exceptionHandler2(NoSuchCustomerException ex) {
-		ErrorMessage error = new ErrorMessage();
-		error.setErrorCode(HttpStatus.BAD_REQUEST.value());
-		error.setMessage(ex.getMessage());
-		return new ResponseEntity<>(error, HttpStatus.OK);
+
+	@ExceptionHandler(InstaCareerException.class)
+	public ResponseEntity<ErrorMessage> instaCareerExceptionHandler(InstaCareerException ex) {
+		ErrorMessage error = ex.getErrorMessage();
+
+		if (error == null) {
+			error = new ErrorMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(),
+					"An unexpected internal error occurred.");
+		}
+		return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
 	}
 }

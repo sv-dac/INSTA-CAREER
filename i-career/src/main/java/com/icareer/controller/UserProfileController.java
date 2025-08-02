@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icareer.dto.UserProfileKafkaPayload;
 import com.icareer.dto.UserProfileRequest;
 import com.icareer.entity.UserProfile;
 import com.icareer.repository.UserProfileRepository;
@@ -58,5 +59,14 @@ public class UserProfileController {
         return processedProfile
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/api/profile/UserProfileKafkaPayload/{correlatedId}")
+    public ResponseEntity<UserProfileKafkaPayload> getUserProfileKafkaPayload(@PathVariable String correlatedId) {
+    	Optional<UserProfileKafkaPayload> processedProfile = userProfileService.getUserProfileKafkaPayload(correlatedId);
+    	
+    	return processedProfile
+    			.map(ResponseEntity::ok)
+    			.orElse(ResponseEntity.notFound().build());
     }
 }

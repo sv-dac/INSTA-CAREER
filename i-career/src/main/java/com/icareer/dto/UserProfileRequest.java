@@ -1,5 +1,6 @@
 package com.icareer.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserProfileRequest implements Serializable {
 	private static final long serialVersionUID = 2572900171853663268L;	
 	/**
@@ -62,6 +64,16 @@ public class UserProfileRequest implements Serializable {
 	 * Psychological insights
 	 */
 	private List<String> psychological_insights;
+	
+	private String error;
+	
+	public String getError() {
+		return error;
+	}
+
+	public void setError(String error) {
+		this.error = error;
+	}
 
 	public List<String> getInterests() {
 		return interests;

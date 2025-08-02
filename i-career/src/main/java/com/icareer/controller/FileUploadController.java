@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.icareer.exception.ErrorMessage;
+import com.icareer.exception.InstaCareerException;
 import com.icareer.service.FileUploadService;
 
 @RestController
@@ -21,10 +23,29 @@ public class FileUploadController {
 	FileUploadService fileUploadService;
 
 	@PostMapping("/uploadZip")
-	public ResponseEntity<String> handleZipUpload(@RequestParam("file") MultipartFile file) {
-		if (file.isEmpty() || !file.getOriginalFilename().endsWith(".zip") || file.getContentType() == null || !file.getContentType().equals("application/zip")) {
-			return ResponseEntity.badRequest().body("Please upload a valid ZIP file.");
-		}
+	public ResponseEntity<String> handleZipUpload(@RequestParam("file") MultipartFile file) throws InstaCareerException {
+//		if (file.isEmpty() || !file.getOriginalFilename().endsWith(".zip") || file.getContentType() == null || !file.getContentType().equals("application/zip")) {
+//			return ResponseEntity.badRequest().body("Please upload a valid ZIP file.");
+//		}
+		
+        if (file.isEmpty()) {
+            ErrorMessage errorDetail = new ErrorMessage(HttpStatus.BAD_REQUEST.value(), "Uploaded file is null or empty");
+            throw new InstaCareerException(errorDetail);
+//            return ResponseEntity.badRequest().body("Uploaded file is empty.");
+        }
+
+        if (file.getOriginalFilename() == null || !file.getOriginalFilename().endsWith(".zip")) {
+            return ResponseEntity.badRequest().body("Uploaded file must have a .zip extension.");
+        }
+
+        if (file.getContentType() == null) {
+            return ResponseEntity.badRequest().body("Content type is missing.");
+        }
+
+        if (!file.getContentType().equals("application/zip") &&
+            !file.getContentType().equals("application/x-zip-compressed")) {
+            return ResponseEntity.badRequest().body("Invalid content type. Expected application/zip.");
+        }
 
 		try {			
 			return ResponseEntity.ok(fileUploadService.handleZipUpload(file));

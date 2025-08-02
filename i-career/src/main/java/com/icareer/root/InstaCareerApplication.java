@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
-@ComponentScan("com.icareer.controller,com.icareer.service,com.icareer.utility,com.icareer.dto")
+@ComponentScan("com.icareer.controller,com.icareer.service,com.icareer.utility,com.icareer.config")
 @EnableJpaRepositories("com.icareer.repository")
 @EntityScan("com.icareer.entity")
 @EnableAsync

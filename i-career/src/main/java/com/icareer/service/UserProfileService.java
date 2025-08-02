@@ -25,11 +25,21 @@ public class UserProfileService {
 		logger.info("Processing profile for correlatedId : {}", userProfileData.getCleaned_descriptions());
 		logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_promt());
 		logger.info("Processing profile for correlatedId : {}", userProfileData.getModel_res());
+
+		if(userProfileData.getModel_res() == null || userProfileData.getModel_res().getError() != null) {
+			logger.warn("UserProfileRequest is null for correlatedId : {}", userProfileData.getId());
+			return;
+		}
+		
 		processedProfiles.put(userProfileData.getId(), userProfileData);
 		logger.info("Stored processed profile for correlatedId : {}", userProfileData.getId());
 	}
 
 	public Optional<UserProfileRequest> getProcessedProfile(String correlatedId) {
 		return Optional.ofNullable(processedProfiles.get(correlatedId)).map(UserProfileKafkaPayload::getModel_res);
+	}
+	
+	public Optional<UserProfileKafkaPayload> getUserProfileKafkaPayload(String correlatedId) {
+		return Optional.ofNullable(processedProfiles.get(correlatedId));
 	}
 }
