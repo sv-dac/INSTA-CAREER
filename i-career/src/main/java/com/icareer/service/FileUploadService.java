@@ -53,7 +53,9 @@ public class FileUploadService {
 
 		String correlatedId = UUID.randomUUID().toString();
 		YouTubeActivityExtractor(file, correlatedId);
-		return correlatedId + " - ZIP file uploaded successfully: " + file.getOriginalFilename();
+		
+		return correlatedId;
+//		return correlatedId + " - ZIP file uploaded successfully: " + file.getOriginalFilename();
 	}
 	
 //	@Async
