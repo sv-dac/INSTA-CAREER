@@ -11,13 +11,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 //import org.springframework.scheduling.annotation.Async;
 //import org.springframework.scheduling.annotation.EnableAsync;
@@ -27,15 +27,28 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icareer.entity.RequestStatus;
+import com.icareer.entity.UserRequest;
+import com.icareer.repository.UserRequestRepository;
+import com.icareer.service.UserProfileStatusService.UserProfileStatus;
 
 //@EnableAsync
 @Service
 public class FileUploadService {
+	
+	@Autowired
+	private UserProfileStatusService userProfileStatus;
+	
+	@Autowired
+	UserRequestRepository UserRequestRepository;
 
 	@Value("${file.upload-dir:uploads}")
 	private final String uploadDir;	
 
 	private final KafkaProducerService kafkaProducerService;
+	
+	private UserRequest userRequest;
 
 	private final int MAX_TASKS = 22;
 	private final double SEARCH_HISTORY_PERCENT = 0.3;
@@ -45,21 +58,30 @@ public class FileUploadService {
 		this.uploadDir = uploadDir;
 	}
 
-	public String handleZipUpload(MultipartFile file) throws IOException {
+	public void handleZipUpload(UserRequest userRequest2, MultipartFile file) throws IOException {
+		this.userRequest = userRequest2;
+
 		Path uploadPath = Paths.get(uploadDir);
 		Files.createDirectories(uploadPath);
 		Path filePath = uploadPath.resolve(file.getOriginalFilename());
 		Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-		String correlatedId = UUID.randomUUID().toString();
-		YouTubeActivityExtractor(file, correlatedId);
 		
-		return correlatedId;
+		userProfileStatus.setStatus(userRequest.getId().toString(), UserProfileStatus.PENDING);
+		
+		userRequest.setZipFilePath(filePath.toString());		
+		UserRequestRepository.saveAndFlush(userRequest);
+		
+		YouTubeActivityExtractor(file, userRequest.getId().toString());
+		
+//		return userRequest;
 //		return correlatedId + " - ZIP file uploaded successfully: " + file.getOriginalFilename();
 	}
 	
 //	@Async
 	private void YouTubeActivityExtractor(MultipartFile file, String correlatedId) throws IOException {
+		userRequest.setStatus(RequestStatus.PROCESSING);
+		UserRequestRepository.saveAndFlush(userRequest);
+		
 		File uploadedZip = new File(uploadDir, file.getOriginalFilename());
 		
 		if (!uploadedZip.exists()) {
@@ -91,7 +113,7 @@ public class FileUploadService {
 	}
 
 	private void sendJSONResponseToKafka(List<JSONObject> searchHistoryList, List<JSONObject> watchHistoryList, String correlatedId) {
-		if (searchHistoryList.isEmpty() || watchHistoryList.isEmpty()) {
+		if (searchHistoryList.isEmpty() && watchHistoryList.isEmpty()) {
 			System.err.println("Required JSON files not found in the ZIP archive or are empty.");
 			return;
 		}
@@ -109,6 +131,8 @@ public class FileUploadService {
 		response.put("id", correlatedId);
 		response.put("activities", activities);
 
+		userProfileStatus.setStatus(correlatedId, UserProfileStatus.PENDING);
+		System.out.println(userProfileStatus.getStatus(correlatedId).get());
 		// Send to Kafka
 		kafkaProducerService.send(response.toString(2));
 	}
@@ -140,7 +164,40 @@ public class FileUploadService {
 	 * return sb.toString(); }
 	 */
 
+	
+	private void streamJsonArray(InputStream in, Consumer<JSONObject> consumer) throws IOException {
+        // ObjectMapper is a powerful Jackson class for reading JSON
+        ObjectMapper mapper = new ObjectMapper();
+        JsonFactory factory = mapper.getFactory();
+
+        try (JsonParser parser = factory.createParser(in)) {
+            // Make sure the file starts with an array token '['
+            if (parser.nextToken() != JsonToken.START_ARRAY) {
+                System.err.println("Error: JSON file is not a valid array.");
+                return;
+            }
+
+            // Loop through the array tokens
+            while (parser.nextToken() != JsonToken.END_ARRAY) {
+                // Check if the current token is the start of an object '{'
+                if (parser.currentToken() == JsonToken.START_OBJECT) {
+                    // Use the ObjectMapper to automatically read the entire complex object.
+                    // This is the key change that fixes the parsing issue.
+                    java.util.Map<String, Object> map = mapper.readValue(parser,
+                            new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+
+                    // Convert the resulting Map into the JSONObject the rest of your code expects
+                    JSONObject obj = new JSONObject(map);
+
+//                    System.out.println("Parsed object: " + obj.toString(2)); // Pretty-print for clarity
+                    consumer.accept(obj);
+                }
+            }
+        }
+    }
+	
 	// Helper to stream JSON array entries from InputStream using Jackson
+	/*
 	private void streamJsonArray(InputStream in, Consumer<JSONObject> consumer) throws IOException {
 		JsonFactory factory = new JsonFactory();
 		
@@ -168,4 +225,5 @@ public class FileUploadService {
 			}
 		}
 	}
+	*/
 }

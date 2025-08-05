@@ -75,4 +75,13 @@ public class UserProfileKafkaPayload implements Serializable {
 		return "UserProfileKafkaPayload [id=" + id + ", raw_descritions=" + raw_descritions + ", cleaned_descriptions="
 				+ cleaned_descriptions + ", model_promt=" + model_promt + ", model_res=" + model_res + "]";
 	}
+	
+	public String toJson() {
+	    try {
+	        return new ObjectMapper().writeValueAsString(this);
+	    } catch (JsonProcessingException e) {
+	        throw new RuntimeException("Failed to serialize UserProfileKafkaPayload", e);
+	    }
+	}
+
 }
