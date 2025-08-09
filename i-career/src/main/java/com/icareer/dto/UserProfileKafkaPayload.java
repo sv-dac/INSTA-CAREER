@@ -2,6 +2,7 @@ package com.icareer.dto;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,16 +57,18 @@ public class UserProfileKafkaPayload implements Serializable {
 	}
 
 	public void setModel_res(Object model_res) {
+		ObjectMapper mapper = new ObjectMapper();
 		if (model_res instanceof String) {
 			try {
-				ObjectMapper mapper = new ObjectMapper();
 				this.model_res = mapper.readValue((String) model_res, UserProfileRequest.class);
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException("Failed to parse model_res JSON string", e);
 			}
 		} else if (model_res instanceof UserProfileRequest) {
 			this.model_res = (UserProfileRequest) model_res;
-		} else {
+		}  else if (model_res instanceof Map) {
+	        this.model_res = mapper.convertValue(model_res, UserProfileRequest.class);
+	    } else {
 			this.model_res = null;
 		}
 	}

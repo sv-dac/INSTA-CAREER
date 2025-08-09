@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icareer.dto.UserProfileKafkaPayload;
 import com.icareer.dto.UserProfileRequest;
 import com.icareer.entity.RequestStatus;
@@ -104,8 +105,57 @@ public class UserProfileService {
 		logger.info("Stored processed profile for correlatedId with status {} : {}", userProfileStatusService.getStatus(correlatedId).get(),correlatedId);
 	}
 
+	/*
 	public Optional<UserProfileRequest> getProcessedProfile(String correlatedId) {
-		return Optional.ofNullable(processedProfiles.get(correlatedId)).map(UserProfileKafkaPayload::getModel_res);
+	    UserProfileKafkaPayload payload = processedProfiles.get(correlatedId);
+	    if (payload == null) {
+	        Optional<UserResponse> userResponseOpt = userResponseRepository.findById(UUID.fromString(correlatedId));
+	        if (userResponseOpt.isPresent()) {
+	            UserResponse userResponse = userResponseOpt.get();
+	            payload = new UserProfileKafkaPayload();
+	            payload.setModel_res(userResponse.getResponseData());
+	            processedProfiles.put(correlatedId, payload);
+	        }
+	    }
+	    if (payload != null && payload.getModel_res() != null) {
+	        // Assuming model_res is a JSON string and UserProfileRequest has a static fromJson(String) method
+	        return Optional.ofNullable(payload.getModel_res());
+	    }
+	    return Optional.empty();
+	}
+	*/
+	
+	public Optional<UserProfileRequest> getProcessedProfile(String correlatedId) {
+	    UserProfileKafkaPayload payload = processedProfiles.get(correlatedId);
+
+	    if (payload == null) {
+	        try {
+	            Optional<UserResponse> userResponseOpt = userResponseRepository.findById(UUID.fromString(correlatedId));
+	            if (userResponseOpt.isPresent()) {
+	                UserResponse userResponse = userResponseOpt.get();
+	                
+	                String jsonResponse = userResponse.getResponseData();
+	                
+	    	        try {
+	    	            ObjectMapper objectMapper = new ObjectMapper(); 
+	    	            payload = objectMapper.readValue(jsonResponse, UserProfileKafkaPayload.class);
+	    	        } catch (Exception e) {
+	    	            System.err.println("Error parsing JSON for correlatedId " + correlatedId + ": " + e.getMessage());
+	    	            return Optional.empty();
+	    	        }
+	                
+	                processedProfiles.put(correlatedId, payload);
+	            }
+	        } catch (IllegalArgumentException e) {
+	            return Optional.empty();
+	        }
+	    }
+
+	    if (payload != null && payload.getModel_res() != null) {
+	    	return Optional.ofNullable(payload.getModel_res());
+	    }
+
+	    return Optional.empty();
 	}
 	
 	public Optional<UserProfileKafkaPayload> getUserProfileKafkaPayload(String correlatedId) {

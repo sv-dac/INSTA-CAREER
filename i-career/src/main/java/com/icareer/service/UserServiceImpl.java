@@ -3,6 +3,7 @@ package com.icareer.service;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -41,7 +42,8 @@ public class UserServiceImpl implements UserService {
 	public ResponseEntity<String> login(String email, String password) throws InstaCareerException {
 		String emailError = ValidationUtils.validateEmail(email);
 		String passwordError = ValidationUtils.validatePassword(password);
-
+		JSONObject response = new JSONObject();
+		
 		if (emailError != null || passwordError != null)
 			throw new InstaCareerException(
 					new ErrorMessage(HttpStatus.BAD_REQUEST.value(), emailError + " " + passwordError));
@@ -49,10 +51,19 @@ public class UserServiceImpl implements UserService {
 //		return userRepository.existsByEmailAndPassword(email, password);
 		Authentication authenticate =  authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, password));
 		
-		if(authenticate.isAuthenticated())
-			return ResponseEntity.ok(jwtService.generateToken(email));
+		if(authenticate.isAuthenticated()) {
+			User user = userRepository.findByEmail(email).orElseThrow(() -> new InstaCareerException(
+					new ErrorMessage(HttpStatus.UNAUTHORIZED.value(), "User not found.")));
+
+			response.put("id", user.getId().toString());
+			response.put("role", user.getRole().toString());
+			response.put("token", jwtService.generateToken(email));
+
+			return ResponseEntity.ok(response.toString());
+		}
 			
 		return ResponseEntity.notFound().build();
+//		return new ResponseEntity<>(response.toString(), HttpStatus.UNAUTHORIZED);
 	}	
 
 	@Override
